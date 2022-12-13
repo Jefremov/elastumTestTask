@@ -17,22 +17,14 @@ public class ApiController {
     ApiService apiService;
 
     @GetMapping("/best-price")
-//    public String getPrice(@RequestParam(name = "currency", required = false)  String currency, @RequestParam(name = "amount", required = false)  String amount) throws IOException {
-    public String getPrice(@RequestBody RequestDto requestDto) throws IOException {
+    public String getPrice(@RequestBody RequestDto requestDto){
         try {
-            System.out.println("Controller: ");
-            System.out.println("currency: " + requestDto.getCurrency());
-            System.out.println("amount: " + requestDto.getAmount());
-            return apiService.getPrice(requestDto.getCurrency(), requestDto.getAmount());
+            return apiService.getPrice(requestDto);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @GetMapping("/test")
-    public List<CoinbasePair> test(){
-        return apiService.test();
-    }
 
 
 

@@ -16,6 +16,7 @@ public interface CoinbaseExchangeRatesRepo extends JpaRepository<ExchangeRate, L
 
     void removeByCurrency(String currency);
 
+
     boolean existsByCurrency(String currency);
 
 

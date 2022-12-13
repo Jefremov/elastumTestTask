@@ -8,16 +8,9 @@ import java.util.List;
 
 @Entity
 @Data
-//@Table(name = "coinbasePair", uniqueConstraints = {
-//        @UniqueConstraint(columnNames = "pair_id")
-//})
 @Table(name = "coinbase_Pair")
 public class CoinbasePair {
 
-//    @Id
-//    @GeneratedValue(strategy = GenerationType.AUTO)
-//    @Column(name = "id")
-//    private Long id;
     @Id
     @Column(name = "pair_id")
     private String pairId;

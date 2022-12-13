@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import javax.transaction.Transactional;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,9 +28,9 @@ public class CoinbaseRatesInit {
     private final int CONNECTION_TIMEOUT = 10000;
     private static Logger log = LoggerFactory.getLogger(CoinbaseRatesInit.class);
 
-    CoinbaseExchangeRatesRepo exchangeRatesRepo;
-    CoinbaseRepository coinbaseRepository;
-    CoinbaseRepoInit coinbaseRepoInit;
+    private CoinbaseExchangeRatesRepo exchangeRatesRepo;
+    private CoinbaseRepository coinbaseRepository;
+    private CoinbaseRepoInit coinbaseRepoInit;
 
     @Autowired
     public CoinbaseRatesInit(CoinbaseExchangeRatesRepo exchangeRatesRepo, CoinbaseRepository coinbaseRepository, CoinbaseRepoInit coinbaseRepoInit) {
@@ -62,37 +63,40 @@ public class CoinbaseRatesInit {
 
     @Scheduled(fixedDelayString = "${currencyGettingInterval}")
     @Async
+    @Transactional
     public void getRates() {
-
+        Long start = System.currentTimeMillis();
         List<String> currencys = new ArrayList<>();
         currencys.add("BTC");
 //        currencys.add("ETH");
 //        currencys.add("USDT");
         currencys.forEach(currency -> {
-         //   new Thread(() -> getRatesByCurrency(currency)).start();
+            //   new Thread(() -> getRatesByCurrency(currency)).start();
             getRatesByCurrency(currency);
             log.info("Getting rates for " + currency);
         });
 
         log.info("Exchange rates received at " + LocalDateTime.now());
+        Long finish = System.currentTimeMillis();
+        log.info("getRates: " + (finish - start));
     }
 
     public void getRatesByCurrency(String currency) {
         try {
-
+            Long start = System.currentTimeMillis();
             Properties prop = new Properties();
             prop.load(InitRepos.class.getClassLoader().getResourceAsStream("coinbase.properties"));
             StringBuilder urlString = new StringBuilder(prop.getProperty("products.address")).append(currency).append("-USD/book?level=2");
             final URL url = new URL(urlString.toString());
             log.info("Connecting to " + url);
+            Long connectionStart = System.currentTimeMillis();
             final HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             con.setRequestProperty("Content-Type", "application/json");
             con.setConnectTimeout(CONNECTION_TIMEOUT);
             con.setReadTimeout(CONNECTION_TIMEOUT);
-            LocalDateTime time = LocalDateTime.now();
+            Long connectionFinish = System.currentTimeMillis();
             if (exchangeRatesRepo.existsByCurrency(currency)) {
-                log.info("Removing rates for " + currency);
                 exchangeRatesRepo.removeByCurrency(currency);
             }
             try (final BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
@@ -104,7 +108,6 @@ public class CoinbaseRatesInit {
                 String asks = content.toString().split("asks\":\\[\\[")[1];
                 asks = asks.substring(0, asks.indexOf("]],"));
                 List<String> asksList = Arrays.asList(asks.split("],\\["));
-
                 asksList.forEach((ask) -> {
                     ask = ask.replace("\"", "");
                     BigDecimal price = new BigDecimal(ask.split(",")[0]);
@@ -115,6 +118,10 @@ public class CoinbaseRatesInit {
                     exchangeRate.setPrice(price);
                     exchangeRatesRepo.save(exchangeRate);
                 });
+                Long finish = System.currentTimeMillis();
+                log.info("getRatesByCurrency all time: " + (finish - start));
+                log.info("getRatesByCurrency connection: " + (connectionFinish - connectionStart));
+                log.info("getRatesByCurrency repo init: " + (finish - connectionFinish));
 
             } catch (final Exception ex) {
                 ex.printStackTrace();
@@ -125,6 +132,5 @@ public class CoinbaseRatesInit {
             log.error(e.toString());
         }
     }
-
 
 }

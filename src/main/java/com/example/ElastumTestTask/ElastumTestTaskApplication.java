@@ -17,10 +17,4 @@ public class ElastumTestTaskApplication {
 
 		SpringApplication.run(ElastumTestTaskApplication.class, args);
 	}
-
-//	@PostConstruct
-//	private void initDb(){
-//		coinbaseApi.initCoinbaseRepo();
-//	}
-
 }
